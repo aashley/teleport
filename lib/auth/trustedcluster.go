@@ -215,10 +215,16 @@ func (s *AuthServer) sendValidateRequestToProxy(host string, validateRequest *Va
 		log.Warn("InsecureSkipVerify used to communicate with proxy.")
 		log.Warn("Make sure you intend to run Teleport in debug mode.")
 
+		// get the default transport (so we can get the proxy from environment)
+		// but disable tls certificate checking.
+		tr, ok := http.DefaultTransport.(*http.Transport)
+		if !ok {
+			return nil, trace.BadParameter("unable to get default transport")
+		}
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
 		insecureWebClient := &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
+			Transport: tr,
 		}
 		opts = append(opts, roundtrip.HTTPClient(insecureWebClient))
 	}
